@@ -3,21 +3,60 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JFrame.java to edit this template
  */
 package com.batalha.gui;
-
+import com.batalha.common.InterfaceServidor;
+import com.batalha.model.Partida;
+import java.util.List;
+import javax.swing.DefaultListModel;
+import javax.swing.JOptionPane;
 /**
  *
  * @author aluno
  */
 public class TelaLobby extends javax.swing.JFrame {
-    
+    private InterfaceServidor servidor;
+    private String idSessao;
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(TelaLobby.class.getName());
 
     /**
      * Creates new form TelaLobby
      */
     public TelaLobby() {
+        this.servidor = servidor;
+        this.idSessao = idSessao;
         initComponents();
+        atualizarListaPartidas();
     }
+    
+    private void btnCriarPartidaActionPerformed(java.awt.event.ActionEvent evt) {
+        try {
+            Partida partida = servidor.criarPartida(idSessao);
+            JOptionPane.showMessageDialog(this, "Partida criada! ID: " + partida.getId());
+            atualizarListaPartidas();
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Erro ao criar partida: " + e.getMessage());
+        }
+    }
+    
+    private void btnAtualizarActionPerformed(java.awt.event.ActionEvent evt) {
+        atualizarListaPartidas();
+    }
+
+    // Duplo clique na lista: entrar em uma partida
+    private void listaPartidasMouseClicked(java.awt.event.MouseEvent evt) {
+        if (evt.getClickCount() == 2) {
+            int idx = listaPartidas.getSelectedIndex();
+            if (idx >= 0) {
+                String selecionado = listaPartidas.getModel().getElementAt(idx);
+                Long idPartida = Long.valueOf(selecionado.split(":")[0].replace("ID ","").trim());
+                try {
+                    servidor.entrarNaPartida(idSessao, idPartida);
+                    new TelaPosicionarNavios(servidor, idSessao, idPartida).setVisible(true);
+                    this.dispose();
+                } catch (Exception e) {
+                    JOptionPane.showMessageDialog(this, "Erro ao entrar na partida: " + e.getMessage());
+                }
+            }
+        }
 
     /**
      * This method is called from within the constructor to initialize the form.

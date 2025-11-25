@@ -4,13 +4,17 @@
  */
 package com.batalha.gui;
 
+import com.batalha.cliente.ClienteRMI;
+import com.batalha.common.InterfaceServidor;
+import javax.swing.JOptionPane;
+
 /**
  *
  * @author aluno
  */
 public class TelaLogin extends javax.swing.JFrame {
-    
-    private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(TelaLogin.class.getName());
+    private InterfaceServidor servidor;
+    private String idSessao;
 
     /**
      * Creates new form TelaLogin
@@ -18,6 +22,30 @@ public class TelaLogin extends javax.swing.JFrame {
     public TelaLogin() {
         initComponents();
     }
+    
+     private void btnEntrarActionPerformed(java.awt.event.ActionEvent evt) {                                          
+        // Pega o texto do campo txtNome
+        String nome = txtNome.getText().trim();
+        if (nome.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Digite seu nome!", "Aviso", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        
+        try {
+            // Conexão RMI
+            ClienteRMI cliente = new ClienteRMI();
+            servidor = cliente.conectar();
+            idSessao = servidor.conectarJogador(nome);
+            JOptionPane.showMessageDialog(this, "Conectado! Sessão: " + idSessao);
+            // Aqui você poderia abrir a próxima tela, exemplo:
+            // new TelaLobby(servidor, idSessao).setVisible(true);
+            // this.dispose();
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, 
+                "Erro ao conectar no servidor: " + ex.getMessage(), 
+                "Erro", JOptionPane.ERROR_MESSAGE);
+        }
+    } 
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -48,6 +76,11 @@ public class TelaLogin extends javax.swing.JFrame {
      * @param args the command line arguments
      */
     public static void main(String args[]) {
+        java.awt.EventQueue.invokeLater(new Runnable() {
+            public void run() {
+                new TelaLogin().setVisible(true);
+            }
+        });
         /* Set the Nimbus look and feel */
         //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
         /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
