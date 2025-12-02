@@ -17,7 +17,6 @@ public class JogadorDTO implements Serializable {
         this.prontoParaJogar = prontoParaJogar;
     }
     
-    // Getters e Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     

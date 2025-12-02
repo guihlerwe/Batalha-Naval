@@ -2,6 +2,7 @@ package com.batalha.gui;
 
 import com.batalha.cliente.ClienteRMI;
 import com.batalha.cliente.GerenciadorCliente;
+import com.batalha.common.ConfiguracaoRMI;
 import com.batalha.common.dto.JogadorDTO;
 import java.awt.*;
 import javax.swing.*;
@@ -9,9 +10,11 @@ import javax.swing.*;
 public class TelaLogin extends JFrame {
     
     private JTextField txtNome;
+    private JTextField txtServidor;
     private JButton btnEntrar;
     private JLabel lblTitulo;
     private JLabel lblNome;
+    private JLabel lblServidor;
     
     public TelaLogin() {
         initComponents();
@@ -21,32 +24,41 @@ public class TelaLogin extends JFrame {
     private void initComponents() {
         setTitle("Batalha Naval - Login");
         setDefaultCloseOperation(EXIT_ON_CLOSE);
-        setSize(450, 300);
+        setSize(450, 380);
         setResizable(false);
         
-        // Panel principal com cor de fundo
         JPanel panelPrincipal = new JPanel();
         panelPrincipal.setLayout(new BoxLayout(panelPrincipal, BoxLayout.Y_AXIS));
         panelPrincipal.setBorder(BorderFactory.createEmptyBorder(30, 40, 30, 40));
-        panelPrincipal.setBackground(new Color(240, 248, 255)); // Azul claro
+        panelPrincipal.setBackground(new Color(240, 248, 255)); 
         
-        // Título com cor
         lblTitulo = new JLabel("⚓ BATALHA NAVAL ⚓");
         lblTitulo.setFont(new Font("Arial", Font.BOLD, 28));
-        lblTitulo.setForeground(new Color(25, 55, 109)); // Azul marinho
+        lblTitulo.setForeground(new Color(25, 55, 109)); 
         lblTitulo.setAlignmentX(Component.CENTER_ALIGNMENT);
         
-        // Espaçamento
         panelPrincipal.add(lblTitulo);
         panelPrincipal.add(Box.createRigidArea(new Dimension(0, 30)));
         
-        // Label nome com cor
+        lblServidor = new JLabel("🌐 IP do Servidor:");
+        lblServidor.setFont(new Font("Arial", Font.BOLD, 15));
+        lblServidor.setForeground(new Color(25, 55, 109));
+        lblServidor.setAlignmentX(Component.CENTER_ALIGNMENT);
+        
+        txtServidor = new JTextField("localhost", 20);
+        txtServidor.setMaximumSize(new Dimension(280, 35));
+        txtServidor.setFont(new Font("Arial", Font.PLAIN, 14));
+        txtServidor.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(25, 55, 109), 2),
+            BorderFactory.createEmptyBorder(5, 10, 5, 10)));
+        txtServidor.setAlignmentX(Component.CENTER_ALIGNMENT);
+        txtServidor.setToolTipText("Digite 'localhost' para jogar local ou o IP do servidor");
+        
         lblNome = new JLabel("👤 Digite seu nome:");
         lblNome.setFont(new Font("Arial", Font.BOLD, 15));
         lblNome.setForeground(new Color(25, 55, 109));
         lblNome.setAlignmentX(Component.CENTER_ALIGNMENT);
         
-        // Campo de texto estilizado
         txtNome = new JTextField(20);
         txtNome.setMaximumSize(new Dimension(280, 35));
         txtNome.setFont(new Font("Arial", Font.PLAIN, 14));
@@ -55,13 +67,12 @@ public class TelaLogin extends JFrame {
             BorderFactory.createEmptyBorder(5, 10, 5, 10)));
         txtNome.setAlignmentX(Component.CENTER_ALIGNMENT);
         
-        // Botão estilizado
         btnEntrar = new JButton("🚢 Entrar no Jogo");
         btnEntrar.setAlignmentX(Component.CENTER_ALIGNMENT);
         btnEntrar.setPreferredSize(new Dimension(200, 45));
         btnEntrar.setMaximumSize(new Dimension(200, 45));
         btnEntrar.setFont(new Font("Arial", Font.BOLD, 15));
-        btnEntrar.setBackground(new Color(25, 55, 109)); // Azul marinho
+        btnEntrar.setBackground(new Color(25, 55, 109)); 
         btnEntrar.setForeground(Color.BLACK);
         btnEntrar.setFocusPainted(false);
         btnEntrar.setBorder(BorderFactory.createCompoundBorder(
@@ -70,7 +81,10 @@ public class TelaLogin extends JFrame {
         btnEntrar.setCursor(new Cursor(Cursor.HAND_CURSOR));
         btnEntrar.addActionListener(e -> btnEntrarActionPerformed());
         
-        // Adicionar componentes
+        panelPrincipal.add(lblServidor);
+        panelPrincipal.add(Box.createRigidArea(new Dimension(0, 10)));
+        panelPrincipal.add(txtServidor);
+        panelPrincipal.add(Box.createRigidArea(new Dimension(0, 20)));
         panelPrincipal.add(lblNome);
         panelPrincipal.add(Box.createRigidArea(new Dimension(0, 10)));
         panelPrincipal.add(txtNome);
@@ -82,6 +96,15 @@ public class TelaLogin extends JFrame {
     
     private void btnEntrarActionPerformed() {
         String nome = txtNome.getText().trim();
+        String servidor = txtServidor.getText().trim();
+        
+        if (servidor.isEmpty()) {
+            JOptionPane.showMessageDialog(this, 
+                "Por favor, digite o IP do servidor!", 
+                "Aviso", 
+                JOptionPane.WARNING_MESSAGE);
+            return;
+        }
         
         if (nome.isEmpty()) {
             JOptionPane.showMessageDialog(this, 
@@ -92,18 +115,21 @@ public class TelaLogin extends JFrame {
         }
         
         try {
+            ConfiguracaoRMI.setHost(servidor);
+            
             ClienteRMI cliente = GerenciadorCliente.getInstancia().getCliente();
             
-            // Conectar ao servidor
             if (!cliente.conectar()) {
                 JOptionPane.showMessageDialog(this,
-                    "Não foi possível conectar ao servidor.\nVerifique se o servidor está rodando.",
+                    "Não foi possível conectar ao servidor.\nVerifique:\n" +
+                    "1. Se o servidor está rodando\n" +
+                    "2. Se o IP está correto\n" +
+                    "3. Se estão na mesma rede Wi-Fi",
                     "Erro de Conexão",
                     JOptionPane.ERROR_MESSAGE);
                 return;
             }
             
-            // Conectar jogador
             JogadorDTO jogador = cliente.conectarJogador(nome);
             
             JOptionPane.showMessageDialog(this,
@@ -111,7 +137,6 @@ public class TelaLogin extends JFrame {
                 "Sucesso",
                 JOptionPane.INFORMATION_MESSAGE);
             
-            // Abrir lobby
             new TelaLobby().setVisible(true);
             this.dispose();
             

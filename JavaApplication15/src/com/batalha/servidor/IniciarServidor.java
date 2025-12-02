@@ -1,22 +1,34 @@
 package com.batalha.servidor;
 
+import com.batalha.common.ConfiguracaoRMI;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
+import java.rmi.server.UnicastRemoteObject;
 
 public class IniciarServidor {
     public static void main(String[] args) {
         try {
-            // Criar o servidor RMI
+            String localIP = ConfiguracaoRMI.getLocalIP();
+            System.setProperty("java.rmi.server.hostname", localIP);
+            
             ServidorRMI servidor = new ServidorRMI();
             
-            // Criar o registro na porta 1099
-            Registry registry = LocateRegistry.createRegistry(1099);
+            Registry registry = LocateRegistry.createRegistry(ConfiguracaoRMI.PORTA);
             
-            // Registrar o servidor com o nome "BatalhaNavalServidor"
-            registry.rebind("BatalhaNavalServidor", servidor);
+            registry.rebind(ConfiguracaoRMI.NOME_SERVICO, servidor);
             
-            System.out.println("Servidor Batalha Naval iniciado na porta 1099");
+            System.out.println("========================================");
+            System.out.println("  SERVIDOR BATALHA NAVAL INICIADO");
+            System.out.println("========================================");
+            System.out.println("Porta: " + ConfiguracaoRMI.PORTA);
+            System.out.println("IP Local: " + localIP);
+            System.out.println();
+            System.out.println("Para conectar de outro computador:");
+            System.out.println("  1. Use o IP: " + localIP);
+            System.out.println("  2. Certifique-se de estar na mesma rede Wi-Fi");
+            System.out.println("========================================");
             System.out.println("Aguardando conexões...");
+            System.out.println();
             
         } catch (Exception e) {
             System.err.println("Erro ao iniciar servidor:");

@@ -6,17 +6,15 @@ import com.batalha.common.dto.PartidaDTO;
 import java.awt.*;
 import java.util.List;
 import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
 
 public class TelaLobby extends JFrame {
     
     private ClienteRMI cliente;
-    private JTable tabelaPartidas;
-    private DefaultTableModel modeloTabela;
+    private JPanel panelPartidas;
     private JButton btnCriarPartida;
     private JButton btnAtualizar;
-    private JButton btnEntrarPartida;
     private Timer timerAtualizacao;
+    private List<PartidaDTO> partidasDisponiveis;
     
     public TelaLobby() {
         this.cliente = GerenciadorCliente.getInstancia().getCliente();
@@ -29,52 +27,37 @@ public class TelaLobby extends JFrame {
     private void initComponents() {
         setTitle("Batalha Naval - Lobby");
         setDefaultCloseOperation(EXIT_ON_CLOSE);
-        setSize(750, 550);
+        setSize(800, 600);
         setResizable(false);
         
-        // Panel principal com cor de fundo
         JPanel panelPrincipal = new JPanel(new BorderLayout(10, 10));
         panelPrincipal.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
         panelPrincipal.setBackground(new Color(240, 248, 255));
         
-        // Título estilizado
-        JLabel lblTitulo = new JLabel("⚓ SALAS DISPONÍVEIS ⚓");
+        JLabel lblTitulo = new JLabel("SALAS DISPONÍVEIS");
         lblTitulo.setFont(new Font("Arial", Font.BOLD, 22));
-        lblTitulo.setForeground(new Color(25, 55, 109)); // Azul marinho
+        lblTitulo.setForeground(new Color(25, 55, 109)); 
         lblTitulo.setHorizontalAlignment(SwingConstants.CENTER);
         lblTitulo.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
         panelPrincipal.add(lblTitulo, BorderLayout.NORTH);
         
-        // Tabela de partidas
-        String[] colunas = {"ID", "Status", "Jogadores", "Tamanho"};
-        modeloTabela = new DefaultTableModel(colunas, 0) {
-            @Override
-            public boolean isCellEditable(int row, int column) {
-                return false;
-            }
-        };
+        panelPartidas = new JPanel();
+        panelPartidas.setLayout(new BoxLayout(panelPartidas, BoxLayout.Y_AXIS));
+        panelPartidas.setBackground(new Color(240, 248, 255));
         
-        tabelaPartidas = new JTable(modeloTabela);
-        tabelaPartidas.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        tabelaPartidas.getTableHeader().setReorderingAllowed(false);
-        tabelaPartidas.setBackground(new Color(255, 255, 255));
-        tabelaPartidas.setFont(new Font("Arial", Font.PLAIN, 12));
-        tabelaPartidas.setRowHeight(25);
-        tabelaPartidas.getTableHeader().setBackground(new Color(25, 55, 109));
-        tabelaPartidas.getTableHeader().setForeground(Color.WHITE);
-        tabelaPartidas.getTableHeader().setFont(new Font("Arial", Font.BOLD, 13));
-        JScrollPane scrollPane = new JScrollPane(tabelaPartidas);
+        JScrollPane scrollPane = new JScrollPane(panelPartidas);
         scrollPane.setBorder(BorderFactory.createLineBorder(new Color(25, 55, 109), 2));
+        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
         panelPrincipal.add(scrollPane, BorderLayout.CENTER);
         
-        // Panel de botões
         JPanel panelBotoes = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
         panelBotoes.setBackground(new Color(240, 248, 255));
         
-        btnCriarPartida = new JButton("➕ Criar Nova Partida");
-        btnCriarPartida.setPreferredSize(new Dimension(180, 40));
+        btnCriarPartida = new JButton("Criar Nova Partida");
+        btnCriarPartida.setPreferredSize(new Dimension(200, 40));
         btnCriarPartida.setFont(new Font("Arial", Font.BOLD, 13));
-        btnCriarPartida.setBackground(new Color(34, 139, 34)); // Verde
+        btnCriarPartida.setBackground(new Color(34, 139, 34)); 
         btnCriarPartida.setForeground(Color.BLACK);
         btnCriarPartida.setFocusPainted(false);
         btnCriarPartida.setBorder(BorderFactory.createCompoundBorder(
@@ -83,22 +66,10 @@ public class TelaLobby extends JFrame {
         btnCriarPartida.setCursor(new Cursor(Cursor.HAND_CURSOR));
         btnCriarPartida.addActionListener(e -> btnCriarPartidaActionPerformed());
         
-        btnEntrarPartida = new JButton("🚢 Entrar na Partida");
-        btnEntrarPartida.setPreferredSize(new Dimension(180, 40));
-        btnEntrarPartida.setFont(new Font("Arial", Font.BOLD, 13));
-        btnEntrarPartida.setBackground(new Color(25, 55, 109)); // Azul marinho
-        btnEntrarPartida.setForeground(Color.BLACK);
-        btnEntrarPartida.setFocusPainted(false);
-        btnEntrarPartida.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(0, 0, 80), 3),
-            BorderFactory.createEmptyBorder(8, 15, 8, 15)));
-        btnEntrarPartida.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        btnEntrarPartida.addActionListener(e -> btnEntrarPartidaActionPerformed());
-        
-        btnAtualizar = new JButton("🔄 Atualizar");
-        btnAtualizar.setPreferredSize(new Dimension(130, 40));
+        btnAtualizar = new JButton("Atualizar");
+        btnAtualizar.setPreferredSize(new Dimension(150, 40));
         btnAtualizar.setFont(new Font("Arial", Font.BOLD, 13));
-        btnAtualizar.setBackground(new Color(100, 100, 100)); // Cinza escuro
+        btnAtualizar.setBackground(new Color(100, 100, 100)); 
         btnAtualizar.setForeground(Color.BLACK);
         btnAtualizar.setFocusPainted(false);
         btnAtualizar.setBorder(BorderFactory.createCompoundBorder(
@@ -108,7 +79,6 @@ public class TelaLobby extends JFrame {
         btnAtualizar.addActionListener(e -> atualizarListaPartidas());
         
         panelBotoes.add(btnCriarPartida);
-        panelBotoes.add(btnEntrarPartida);
         panelBotoes.add(btnAtualizar);
         
         panelPrincipal.add(panelBotoes, BorderLayout.SOUTH);
@@ -118,7 +88,6 @@ public class TelaLobby extends JFrame {
     
     private void btnCriarPartidaActionPerformed() {
         try {
-            // Diálogo para selecionar tamanho do tabuleiro
             String[] opcoesTamanho = {"8x8", "10x10", "12x12", "15x15"};
             String selecao = (String) JOptionPane.showInputDialog(
                 this,
@@ -127,15 +96,13 @@ public class TelaLobby extends JFrame {
                 JOptionPane.QUESTION_MESSAGE,
                 null,
                 opcoesTamanho,
-                opcoesTamanho[1] // 10x10 como padrão
+                opcoesTamanho[1] 
             );
             
-            // Se o usuário cancelou
             if (selecao == null) {
                 return;
             }
             
-            // Extrair o número do tamanho (ex: "10x10" -> 10)
             int tamanho = Integer.parseInt(selecao.split("x")[0]);
             
             PartidaDTO partida = cliente.criarPartida(tamanho);
@@ -150,7 +117,6 @@ public class TelaLobby extends JFrame {
             atualizarListaPartidas();
             
             System.out.println("Abrindo tela de posicionamento...");
-            // Abrir tela de posicionamento
             new TelaPosicionarNavios().setVisible(true);
             pararAtualizacaoAutomatica();
             this.dispose();
@@ -163,27 +129,95 @@ public class TelaLobby extends JFrame {
         }
     }
     
-    private void btnEntrarPartidaActionPerformed() {
-        int linhaSelecionada = tabelaPartidas.getSelectedRow();
-        
-        if (linhaSelecionada == -1) {
-            JOptionPane.showMessageDialog(this,
-                "Selecione uma partida para entrar!",
-                "Aviso",
-                JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-        
+    private void atualizarListaPartidas() {
         try {
-            Long idPartida = (Long) modeloTabela.getValueAt(linhaSelecionada, 0);
-            PartidaDTO partida = cliente.entrarNaPartida(idPartida);
+            partidasDisponiveis = cliente.listarPartidasDisponiveis();
+            panelPartidas.removeAll();
+            
+            if (partidasDisponiveis.isEmpty()) {
+                JLabel lblVazio = new JLabel("Nenhuma partida disponível no momento");
+                lblVazio.setFont(new Font("Arial", Font.ITALIC, 14));
+                lblVazio.setForeground(Color.GRAY);
+                lblVazio.setAlignmentX(Component.CENTER_ALIGNMENT);
+                lblVazio.setBorder(BorderFactory.createEmptyBorder(20, 0, 0, 0));
+                panelPartidas.add(lblVazio);
+            } else {
+                for (PartidaDTO partida : partidasDisponiveis) {
+                    JPanel cardPartida = criarCardPartida(partida);
+                    panelPartidas.add(cardPartida);
+                    panelPartidas.add(Box.createRigidArea(new Dimension(0, 10))); 
+                }
+            }
+            
+            panelPartidas.revalidate();
+            panelPartidas.repaint();
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this,
+                "Erro ao atualizar lista: " + e.getMessage(),
+                "Erro",
+                JOptionPane.ERROR_MESSAGE);
+        }
+    }
+    
+    private JPanel criarCardPartida(PartidaDTO partida) {
+        JPanel card = new JPanel();
+        card.setLayout(new BorderLayout(10, 5));
+        card.setMaximumSize(new Dimension(750, 80));
+        card.setPreferredSize(new Dimension(750, 80));
+        card.setBackground(Color.WHITE);
+        card.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(25, 55, 109), 2),
+            BorderFactory.createEmptyBorder(10, 15, 10, 15)
+        ));
+        
+        JPanel panelInfo = new JPanel();
+        panelInfo.setLayout(new GridLayout(2, 2, 5, 2));
+        panelInfo.setBackground(Color.WHITE);
+        
+        JLabel lblId = new JLabel("Sala #" + partida.getId());
+        lblId.setFont(new Font("Arial", Font.BOLD, 14));
+        lblId.setForeground(new Color(25, 55, 109));
+        
+        JLabel lblStatus = new JLabel("Status: " + partida.getStatus());
+        lblStatus.setFont(new Font("Arial", Font.PLAIN, 12));
+        
+        JLabel lblJogadores = new JLabel("Jogadores: " + partida.getJogadores().size() + "/2");
+        lblJogadores.setFont(new Font("Arial", Font.PLAIN, 12));
+        
+        JLabel lblTamanho = new JLabel("Tabuleiro: " + partida.getTamanhoTabuleiro() + "x" + partida.getTamanhoTabuleiro());
+        lblTamanho.setFont(new Font("Arial", Font.PLAIN, 12));
+        
+        panelInfo.add(lblId);
+        panelInfo.add(lblStatus);
+        panelInfo.add(lblJogadores);
+        panelInfo.add(lblTamanho);
+        
+        JButton btnSelecionar = new JButton("SELECIONAR");
+        btnSelecionar.setPreferredSize(new Dimension(150, 60));
+        btnSelecionar.setFont(new Font("Arial", Font.BOLD, 12));
+        btnSelecionar.setBackground(new Color(25, 55, 109));
+        btnSelecionar.setForeground(Color.BLACK);
+        btnSelecionar.setFocusPainted(false);
+        btnSelecionar.setBorder(BorderFactory.createLineBorder(new Color(0, 0, 80), 3));
+        btnSelecionar.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        
+        btnSelecionar.addActionListener(e -> entrarNaPartida(partida));
+        
+        card.add(panelInfo, BorderLayout.CENTER);
+        card.add(btnSelecionar, BorderLayout.EAST);
+        
+        return card;
+    }
+    
+    private void entrarNaPartida(PartidaDTO partida) {
+        try {
+            cliente.entrarNaPartida(partida.getId());
             
             JOptionPane.showMessageDialog(this,
                 "Você entrou na partida!",
                 "Sucesso",
                 JOptionPane.INFORMATION_MESSAGE);
             
-            // Abrir tela de posicionamento
             new TelaPosicionarNavios().setVisible(true);
             pararAtualizacaoAutomatica();
             this.dispose();
@@ -191,32 +225,6 @@ public class TelaLobby extends JFrame {
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this,
                 "Erro ao entrar na partida: " + e.getMessage(),
-                "Erro",
-                JOptionPane.ERROR_MESSAGE);
-        }
-    }
-    
-    private void atualizarListaPartidas() {
-        try {
-            List<PartidaDTO> partidas = cliente.listarPartidasDisponiveis();
-            
-            // Limpar tabela
-            modeloTabela.setRowCount(0);
-            
-            // Adicionar partidas
-            for (PartidaDTO partida : partidas) {
-                Object[] linha = {
-                    partida.getId(),
-                    partida.getStatus(),
-                    partida.getJogadores().size() + "/2",
-                    partida.getTamanhoTabuleiro() + "x" + partida.getTamanhoTabuleiro()
-                };
-                modeloTabela.addRow(linha);
-            }
-            
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(this,
-                "Erro ao atualizar lista: " + e.getMessage(),
                 "Erro",
                 JOptionPane.ERROR_MESSAGE);
         }

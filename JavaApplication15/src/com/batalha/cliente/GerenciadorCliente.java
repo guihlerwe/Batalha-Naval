@@ -1,6 +1,5 @@
 package com.batalha.cliente;
 
-// Singleton para gerenciar a instância do cliente em toda a aplicação
 public class GerenciadorCliente {
     
     private static GerenciadorCliente instancia;

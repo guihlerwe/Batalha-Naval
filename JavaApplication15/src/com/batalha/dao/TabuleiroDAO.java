@@ -76,4 +76,39 @@ public class TabuleiroDAO {
             em.close();
         }
     }
+    
+    public void removerPorJogador(Long jogadorId) {
+        EntityManager em = JPAUtil.getEntityManager();
+        try {
+            em.getTransaction().begin();
+            
+            int naviosRemovidos = em.createNativeQuery("DELETE FROM navio WHERE tabuleiro_id IN (SELECT id FROM tabuleiro WHERE jogador_id = ?)")
+                .setParameter(1, jogadorId)
+                .executeUpdate();
+            
+            int tabuleirosRemovidos = em.createNativeQuery("DELETE FROM tabuleiro WHERE jogador_id = ?")
+                .setParameter(1, jogadorId)
+                .executeUpdate();
+            
+            em.getTransaction().commit();
+            
+            System.out.println("SQL: Removidos " + naviosRemovidos + " navios e " + tabuleirosRemovidos + " tabuleiro(s) do jogador " + jogadorId);
+        } catch (Exception e) {
+            if (em.getTransaction().isActive()) {
+                em.getTransaction().rollback();
+            }
+            System.err.println("Erro ao remover tabuleiro por jogador: " + e.getMessage());
+            throw e;
+        } finally {
+            if (em.isOpen()) {
+                em.close();
+            }
+        }
+        
+        try {
+            Thread.sleep(50);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
 }

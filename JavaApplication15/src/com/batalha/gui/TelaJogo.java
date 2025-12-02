@@ -24,11 +24,10 @@ public class TelaJogo extends JFrame {
     public TelaJogo() {
         this.cliente = GerenciadorCliente.getInstancia().getCliente();
         
-        // Obter tamanho do tabuleiro da partida atual
         try {
             this.TAMANHO_TABULEIRO = cliente.getPartidaAtual().getTamanhoTabuleiro();
         } catch (Exception e) {
-            this.TAMANHO_TABULEIRO = 10; // Padrão se houver erro
+            this.TAMANHO_TABULEIRO = 10; 
         }
         
         initComponents();
@@ -41,16 +40,14 @@ public class TelaJogo extends JFrame {
         setTitle("Batalha Naval - Jogo");
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         
-        // Ajustar tamanho da janela baseado no tamanho do tabuleiro
-        // Dois tabuleiros lado a lado
         int larguraBase = TAMANHO_TABULEIRO * TAMANHO_CELULA * 2;
         int alturaBase = TAMANHO_TABULEIRO * TAMANHO_CELULA;
         
-        int largura = larguraBase + 250; // Espaço para coordenadas, margens e separação
-        int altura = alturaBase + 250; // Espaço para título, coordenadas e status
+        int largura = larguraBase + 250; 
+        int altura = alturaBase + 250; 
         
         setSize(largura, altura);
-        setResizable(true); // Permitir redimensionar para telas menores
+        setResizable(true); 
         
         System.out.println("Tamanho da janela de jogo: " + largura + "x" + altura + " (Tabuleiro: " + TAMANHO_TABULEIRO + "x" + TAMANHO_TABULEIRO + ")");
         
@@ -58,18 +55,15 @@ public class TelaJogo extends JFrame {
         panelPrincipal.setBackground(new Color(240, 248, 255));
         panelPrincipal.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
         
-        // Título
         JLabel lblTitulo = new JLabel("⚓ BATALHA NAVAL ⚓");
         lblTitulo.setFont(new Font("Arial", Font.BOLD, 22));
         lblTitulo.setForeground(new Color(25, 55, 109));
         lblTitulo.setHorizontalAlignment(SwingConstants.CENTER);
         panelPrincipal.add(lblTitulo, BorderLayout.NORTH);
         
-        // Panel central com os dois tabuleiros
         JPanel panelTabuleiros = new JPanel(new GridLayout(1, 2, 20, 0));
         panelTabuleiros.setBackground(new Color(240, 248, 255));
         
-        // Meu tabuleiro
         JPanel panelMeuTabuleiroContainer = new JPanel(new BorderLayout(5, 5));
         panelMeuTabuleiroContainer.setBackground(new Color(240, 248, 255));
         JLabel lblMeuTabuleiro = new JLabel("🚢 MEU TABULEIRO");
@@ -78,11 +72,9 @@ public class TelaJogo extends JFrame {
         lblMeuTabuleiro.setForeground(new Color(25, 55, 109));
         panelMeuTabuleiroContainer.add(lblMeuTabuleiro, BorderLayout.NORTH);
         
-        // Painel com coordenadas para meu tabuleiro
         JPanel panelMeuTabComCoord = new JPanel(new BorderLayout(3, 3));
         panelMeuTabComCoord.setBackground(new Color(240, 248, 255));
         
-        // Coordenadas superiores (0-9)
         JPanel panelCoordSup1 = new JPanel(new GridLayout(1, TAMANHO_TABULEIRO + 1, 1, 0));
         panelCoordSup1.setBackground(new Color(240, 248, 255));
         panelCoordSup1.add(new JLabel(""));
@@ -94,11 +86,9 @@ public class TelaJogo extends JFrame {
         }
         panelMeuTabComCoord.add(panelCoordSup1, BorderLayout.NORTH);
         
-        // Painel central com letras e tabuleiro
         JPanel panelCentral1 = new JPanel(new BorderLayout(3, 0));
         panelCentral1.setBackground(new Color(240, 248, 255));
         
-        // Letras A-Z
         JPanel panelLetras1 = new JPanel(new GridLayout(TAMANHO_TABULEIRO, 1, 0, 1));
         panelLetras1.setBackground(new Color(240, 248, 255));
         for (int i = 0; i < TAMANHO_TABULEIRO; i++) {
@@ -116,7 +106,7 @@ public class TelaJogo extends JFrame {
         panelCentral1.add(panelLetras1, BorderLayout.WEST);
         
         panelMeuTabuleiro = new JPanel(new GridLayout(TAMANHO_TABULEIRO, TAMANHO_TABULEIRO, 1, 1));
-        panelMeuTabuleiro.setBackground(new Color(60, 90, 130)); // Cor da grade
+        panelMeuTabuleiro.setBackground(new Color(60, 90, 130)); 
         panelMeuTabuleiro.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(new Color(25, 55, 109), 3),
             BorderFactory.createEmptyBorder(1, 1, 1, 1)
@@ -126,7 +116,7 @@ public class TelaJogo extends JFrame {
         for (int i = 0; i < TAMANHO_TABULEIRO; i++) {
             for (int j = 0; j < TAMANHO_TABULEIRO; j++) {
                 JButton btn = new JButton();
-                btn.setBackground(new Color(135, 206, 250)); // Azul céu
+                btn.setBackground(new Color(135, 206, 250)); 
                 btn.setBorder(BorderFactory.createCompoundBorder(
                     BorderFactory.createLineBorder(new Color(25, 55, 109), 1),
                     BorderFactory.createLineBorder(new Color(100, 150, 200), 1)
@@ -142,7 +132,6 @@ public class TelaJogo extends JFrame {
         panelMeuTabComCoord.add(panelCentral1, BorderLayout.CENTER);
         panelMeuTabuleiroContainer.add(panelMeuTabComCoord, BorderLayout.CENTER);
         
-        // Tabuleiro inimigo
         JPanel panelTabuleiroInimigoContainer = new JPanel(new BorderLayout(5, 5));
         panelTabuleiroInimigoContainer.setBackground(new Color(240, 248, 255));
         JLabel lblTabuleiroInimigo = new JLabel("🎯 TABULEIRO INIMIGO");
@@ -151,11 +140,9 @@ public class TelaJogo extends JFrame {
         lblTabuleiroInimigo.setForeground(new Color(25, 55, 109));
         panelTabuleiroInimigoContainer.add(lblTabuleiroInimigo, BorderLayout.NORTH);
         
-        // Painel com coordenadas para tabuleiro inimigo
         JPanel panelTabInimigoComCoord = new JPanel(new BorderLayout(3, 3));
         panelTabInimigoComCoord.setBackground(new Color(240, 248, 255));
         
-        // Coordenadas superiores (0-9)
         JPanel panelCoordSup2 = new JPanel(new GridLayout(1, TAMANHO_TABULEIRO + 1, 1, 0));
         panelCoordSup2.setBackground(new Color(240, 248, 255));
         panelCoordSup2.add(new JLabel(""));
@@ -167,11 +154,9 @@ public class TelaJogo extends JFrame {
         }
         panelTabInimigoComCoord.add(panelCoordSup2, BorderLayout.NORTH);
         
-        // Painel central com letras e tabuleiro
         JPanel panelCentral2 = new JPanel(new BorderLayout(3, 0));
         panelCentral2.setBackground(new Color(240, 248, 255));
         
-        // Letras A-Z
         JPanel panelLetras2 = new JPanel(new GridLayout(TAMANHO_TABULEIRO, 1, 0, 1));
         panelLetras2.setBackground(new Color(240, 248, 255));
         for (int i = 0; i < TAMANHO_TABULEIRO; i++) {
@@ -189,7 +174,7 @@ public class TelaJogo extends JFrame {
         panelCentral2.add(panelLetras2, BorderLayout.WEST);
         
         panelTabuleiroInimigo = new JPanel(new GridLayout(TAMANHO_TABULEIRO, TAMANHO_TABULEIRO, 1, 1));
-        panelTabuleiroInimigo.setBackground(new Color(60, 90, 130)); // Cor da grade
+        panelTabuleiroInimigo.setBackground(new Color(60, 90, 130)); 
         panelTabuleiroInimigo.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(new Color(25, 55, 109), 3),
             BorderFactory.createEmptyBorder(1, 1, 1, 1)
@@ -199,7 +184,7 @@ public class TelaJogo extends JFrame {
         for (int i = 0; i < TAMANHO_TABULEIRO; i++) {
             for (int j = 0; j < TAMANHO_TABULEIRO; j++) {
                 JButton btn = new JButton();
-                btn.setBackground(new Color(135, 206, 250)); // Azul céu
+                btn.setBackground(new Color(135, 206, 250)); 
                 btn.setBorder(BorderFactory.createCompoundBorder(
                     BorderFactory.createLineBorder(new Color(25, 55, 109), 1),
                     BorderFactory.createLineBorder(new Color(100, 150, 200), 1)
@@ -224,7 +209,6 @@ public class TelaJogo extends JFrame {
         panelTabuleiros.add(panelTabuleiroInimigoContainer);
         panelPrincipal.add(panelTabuleiros, BorderLayout.CENTER);
         
-        // Panel inferior com status
         JPanel panelStatus = new JPanel(new GridLayout(2, 1, 5, 5));
         panelStatus.setBackground(new Color(240, 248, 255));
         
@@ -248,7 +232,6 @@ public class TelaJogo extends JFrame {
     
     private void atacarPosicao(int linha, int coluna) {
         try {
-            // Verificar se é o turno do jogador
             if (!cliente.ehMeuTurno()) {
                 JOptionPane.showMessageDialog(this,
                     "Não é o seu turno!",
@@ -257,7 +240,6 @@ public class TelaJogo extends JFrame {
                 return;
             }
             
-            // Verificar se já atacou esta posição
             JButton btn = botoesTabuleiroInimigo[linha][coluna];
             if (!btn.isEnabled()) {
                 JOptionPane.showMessageDialog(this,
@@ -267,10 +249,8 @@ public class TelaJogo extends JFrame {
                 return;
             }
             
-            // Fazer ataque
             ResultadoJogadaDTO resultado = cliente.atacar(linha, coluna);
             
-            // Marcar posição
             btn.setEnabled(false);
             
             switch (resultado.getResultado()) {
@@ -293,7 +273,6 @@ public class TelaJogo extends JFrame {
                     break;
             }
             
-            // Verificar fim de jogo
             if (resultado.isFimDeJogo()) {
                 pararAtualizacaoAutomatica();
                 
@@ -309,7 +288,6 @@ public class TelaJogo extends JFrame {
                     "Fim de Jogo",
                     JOptionPane.INFORMATION_MESSAGE);
                 
-                // Voltar ao lobby
                 new TelaLobby().setVisible(true);
                 this.dispose();
             }
@@ -326,14 +304,12 @@ public class TelaJogo extends JFrame {
     
     private void atualizarMeuTabuleiro() {
         try {
-            // Obter posições dos meus navios do cliente
             boolean[][] posicoes = cliente.obterPosicoesNavios();
             
-            // Primeiro, mostrar onde estão os navios
             for (int i = 0; i < TAMANHO_TABULEIRO; i++) {
                 for (int j = 0; j < TAMANHO_TABULEIRO; j++) {
                     if (posicoes[i][j]) {
-                        botoesMeuTabuleiro[i][j].setBackground(new Color(60, 60, 60)); // Cinza escuro
+                        botoesMeuTabuleiro[i][j].setBackground(new Color(60, 60, 60)); 
                         botoesMeuTabuleiro[i][j].setText("■");
                         botoesMeuTabuleiro[i][j].setForeground(Color.WHITE);
                         botoesMeuTabuleiro[i][j].setFont(new Font("Arial", Font.PLAIN, 16));
@@ -341,7 +317,6 @@ public class TelaJogo extends JFrame {
                 }
             }
             
-            // Obter ataques recebidos
             String[][] ataquesRecebidos = cliente.obterAtaquesRecebidos();
             
             for (int i = 0; i < TAMANHO_TABULEIRO; i++) {
@@ -367,7 +342,6 @@ public class TelaJogo extends JFrame {
     
     private void atualizarEstadoJogo() {
         try {
-            // Verificar se a partida terminou
             PartidaDTO partida = cliente.obterEstadoPartida();
             
             if (partida != null && "FINALIZADA".equals(partida.getStatus())) {
@@ -401,7 +375,6 @@ public class TelaJogo extends JFrame {
                 lblStatus.setText("Status: Aguardando jogada do adversário...");
             }
             
-            // Atualizar meu tabuleiro com novos ataques
             atualizarMeuTabuleiro();
             
         } catch (Exception e) {

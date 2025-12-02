@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package com.batalha.cliente;
 
 import com.batalha.common.ConfiguracaoRMI;
@@ -19,8 +15,10 @@ public class ClienteRMI {
     
     public boolean conectar() {
         try {
-            Registry registry = LocateRegistry.getRegistry(ConfiguracaoRMI.HOST, ConfiguracaoRMI.PORTA);
+            String host = ConfiguracaoRMI.getHost();
+            Registry registry = LocateRegistry.getRegistry(host, ConfiguracaoRMI.PORTA);
             servidor = (InterfaceServidor) registry.lookup(ConfiguracaoRMI.NOME_SERVICO);
+            System.out.println("Conectado ao servidor em " + host + ":" + ConfiguracaoRMI.PORTA);
             return true;
         } catch (Exception e) {
             System.err.println("Erro ao conectar ao servidor: " + e.getMessage());
@@ -73,6 +71,14 @@ public class ClienteRMI {
             throw new Exception("Não conectado ao servidor");
         }
         return servidor.listarPartidasDisponiveis();
+    }
+    
+    public void cancelarPartida() throws Exception {
+        if (servidor == null || jogadorAtual == null || partidaAtual == null) {
+            throw new Exception("Não há partida para cancelar");
+        }
+        servidor.cancelarPartida(jogadorAtual.getId(), partidaAtual.getId());
+        partidaAtual = null;
     }
     
     public PartidaDTO obterEstadoPartida() throws Exception {
@@ -128,10 +134,8 @@ public class ClienteRMI {
             throw new Exception("Jogador não conectado");
         }
         
-        // Obter tamanho do tabuleiro da partida
         int tamanho = partidaAtual != null ? partidaAtual.getTamanhoTabuleiro() : 10;
         
-        // Obter matriz do servidor
         String matriz = servidor.obterMinhaMatriz(jogadorAtual.getId());
         boolean[][] posicoes = new boolean[tamanho][tamanho];
         
@@ -139,7 +143,6 @@ public class ClienteRMI {
             String[] linhas = matriz.split("\\|");
             for (int i = 0; i < Math.min(linhas.length, tamanho); i++) {
                 for (int j = 0; j < Math.min(linhas[i].length(), tamanho); j++) {
-                    // '1' indica que tem navio
                     posicoes[i][j] = linhas[i].charAt(j) == '1' || linhas[i].charAt(j) == '3';
                 }
             }
@@ -153,10 +156,8 @@ public class ClienteRMI {
             throw new Exception("Jogador não conectado");
         }
         
-        // Obter tamanho do tabuleiro da partida
         int tamanho = partidaAtual != null ? partidaAtual.getTamanhoTabuleiro() : 10;
         
-        // Obter matriz do servidor
         String matriz = servidor.obterMinhaMatriz(jogadorAtual.getId());
         String[][] ataques = new String[tamanho][tamanho];
         

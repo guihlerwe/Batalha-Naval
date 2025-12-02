@@ -19,7 +19,6 @@ public class NavioDTO implements Serializable {
         this.orientacao = orientacao;
     }
     
-    // Getters e Setters
     public String getTipo() { return tipo; }
     public void setTipo(String tipo) { this.tipo = tipo; }
     

@@ -5,7 +5,7 @@ import java.io.Serializable;
 public class ResultadoJogadaDTO implements Serializable {
     private static final long serialVersionUID = 1L;
     
-    private String resultado; // AGUA, ACERTO, AFUNDOU
+    private String resultado; 
     private boolean fimDeJogo;
     private Long vencedorId;
     private String mensagem;
@@ -19,7 +19,6 @@ public class ResultadoJogadaDTO implements Serializable {
         this.mensagem = mensagem;
     }
     
-    // Getters e Setters
     public String getResultado() { return resultado; }
     public void setResultado(String resultado) { this.resultado = resultado; }
     

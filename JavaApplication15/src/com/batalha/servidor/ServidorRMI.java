@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package com.batalha.servidor;
 
 import com.batalha.common.InterfaceServidor;
@@ -17,7 +13,6 @@ import javax.persistence.TypedQuery;
 
 public class ServidorRMI extends UnicastRemoteObject implements InterfaceServidor {
     
-    // DAOs
     private JogadorDAO jogadorDAO;
     private PartidaDAO partidaDAO;
     private TabuleiroDAO tabuleiroDAO;
@@ -53,21 +48,16 @@ public class ServidorRMI extends UnicastRemoteObject implements InterfaceServido
                 Partida partida = jogador.getPartida();
                 Long partidaId = partida.getId();
                 
-                // Forçar carregamento dos jogadores
                 partida.getJogadores().size();
                 
-                // Remover jogador da partida
                 partida.getJogadores().remove(jogador);
                 jogador.setPartida(null);
                 jogador.setProntoParaJogar(false);
                 
-                // Atualizar jogador primeiro
                 jogadorDAO.atualizar(jogador);
                 
-                // Se a partida não está finalizada
                 if (!partida.getStatus().equals("FINALIZADA")) {
                     if (partida.getJogadores().isEmpty()) {
-                        // Partida vazia, remover
                         try {
                             partidaDAO.remover(partidaId);
                             System.out.println("Partida " + partidaId + " removida (ficou vazia)");
@@ -75,12 +65,10 @@ public class ServidorRMI extends UnicastRemoteObject implements InterfaceServido
                             System.err.println("Erro ao remover partida vazia: " + e.getMessage());
                         }
                     } else if (partida.getJogadores().size() == 1) {
-                        // Avisar o outro jogador e marcar como cancelada
                         partida.setStatus("CANCELADA");
                         partidaDAO.atualizar(partida);
                         System.out.println("Partida " + partidaId + " marcada como cancelada");
                     } else {
-                        // Atualizar partida normalmente
                         partidaDAO.atualizar(partida);
                     }
                 }
@@ -94,7 +82,6 @@ public class ServidorRMI extends UnicastRemoteObject implements InterfaceServido
     @Override
     public PartidaDTO criarPartida(int tamanhoTabuleiro) throws RemoteException {
         try {
-            // Limpar partidas antigas vazias ou incompletas
             limparPartidasAbandonadas();
             
             Partida partida = new Partida();
@@ -111,7 +98,10 @@ public class ServidorRMI extends UnicastRemoteObject implements InterfaceServido
     
     @Override
     public PartidaDTO entrarNaPartida(Long jogadorId, Long partidaId) throws RemoteException {
+        
         try {
+            System.out.println("=== ENTRANDO NA PARTIDA " + partidaId + " - JOGADOR " + jogadorId + " ===");
+            
             Jogador jogador = jogadorDAO.buscar(jogadorId);
             Partida partida = partidaDAO.buscar(partidaId);
             
@@ -123,95 +113,96 @@ public class ServidorRMI extends UnicastRemoteObject implements InterfaceServido
                 throw new RemoteException("Partida já está cheia");
             }
             
-            // Verificar se o jogador já está nesta partida
-            if (jogador.getPartida() != null && jogador.getPartida().getId().equals(partidaId)) {
-                System.out.println("Jogador " + jogadorId + " já está na partida " + partidaId);
+            if (jogador.getPartida() != null && jogador.getPartida().getId().equals(partidaId) && jogador.getTabuleiro() != null) {
+                System.out.println("Jogador já está na partida com tabuleiro, retornando...");
                 return converterPartidaParaDTO(partida);
             }
             
-            // Remover jogador de partida anterior se existir
-            if (jogador.getPartida() != null) {
-                Partida partidaAnterior = jogador.getPartida();
-                System.out.println("Removendo jogador " + jogadorId + " da partida anterior " + partidaAnterior.getId());
+            System.out.println("ETAPA 1: Limpeza de tabuleiros antigos");
+            EntityManager emLimpeza = JPAUtil.getEntityManager();
+            try {
+                emLimpeza.getTransaction().begin();
                 
-                partidaAnterior.getJogadores().remove(jogador);
-                jogador.setPartida(null);
-                jogador.setProntoParaJogar(false);
+                int naviosRemovidos = emLimpeza.createNativeQuery(
+                    "DELETE FROM navio WHERE tabuleiro_id IN (SELECT id FROM tabuleiro WHERE jogador_id = ?)")
+                    .setParameter(1, jogadorId)
+                    .executeUpdate();
                 
-                // Atualizar jogador primeiro para remover a referência
-                jogadorDAO.atualizar(jogador);
-                partidaDAO.atualizar(partidaAnterior);
+                int tabuleirosRemovidos = emLimpeza.createNativeQuery(
+                    "DELETE FROM tabuleiro WHERE jogador_id = ?")
+                    .setParameter(1, jogadorId)
+                    .executeUpdate();
                 
-                // Se a partida anterior ficou vazia, remover
-                if (partidaAnterior.getJogadores().isEmpty() && !partidaAnterior.getStatus().equals("FINALIZADA")) {
-                    try {
-                        System.out.println("Removendo partida vazia " + partidaAnterior.getId());
-                        partidaDAO.remover(partidaAnterior.getId());
-                    } catch (Exception e) {
-                        System.err.println("Não foi possível remover partida vazia ID " + partidaAnterior.getId() + ": " + e.getMessage());
-                    }
+                emLimpeza.getTransaction().commit();
+                System.out.println("  -> Limpeza concluída: " + naviosRemovidos + " navios, " + tabuleirosRemovidos + " tabuleiro(s)");
+                
+            } catch (Exception e) {
+                if (emLimpeza.getTransaction().isActive()) {
+                    emLimpeza.getTransaction().rollback();
+                }
+                System.err.println("Erro na limpeza: " + e.getMessage());
+            } finally {
+                if (emLimpeza.isOpen()) {
+                    emLimpeza.close();
                 }
             }
             
-            System.out.println("Adicionando jogador " + jogadorId + " à partida " + partidaId);
+            Thread.sleep(100);
             
-            // Adicionar jogador à partida
-            partida.adicionarJogador(jogador);
-            
-            // Verificar se o jogador já tem um tabuleiro e removê-lo
-            Tabuleiro tabuleiroAntigo = jogador.getTabuleiro();
-            if (tabuleiroAntigo != null) {
-                System.out.println("Removendo tabuleiro antigo ID " + tabuleiroAntigo.getId() + " do jogador " + jogadorId);
+            System.out.println("ETAPA 2: Verificação de limpeza");
+            EntityManager emVerif = JPAUtil.getEntityManager();
+            try {
+                Long count = (Long) emVerif.createQuery("SELECT COUNT(t) FROM Tabuleiro t WHERE t.jogador.id = :jogadorId")
+                    .setParameter("jogadorId", jogadorId)
+                    .getSingleResult();
+                System.out.println("  -> Tabuleiros restantes: " + count);
                 
-                // Forçar carregamento dos navios
-                tabuleiroAntigo.getNavios().size();
-                
-                // Remover navios antigos
-                for (Navio navio : new ArrayList<>(tabuleiroAntigo.getNavios())) {
-                    try {
-                        navioDAO.remover(navio.getId());
-                    } catch (Exception e) {
-                        System.err.println("Erro ao remover navio: " + e.getMessage());
-                    }
+                if (count > 0) {
+                    System.err.println("  -> ERRO: Ainda existem " + count + " tabuleiro(s)!");
+                    throw new RemoteException("Falha ao limpar tabuleiros antigos");
                 }
-                
-                // Desassociar e remover o tabuleiro antigo
-                Long tabuleiroAntigoId = tabuleiroAntigo.getId();
-                jogador.setTabuleiro(null);
-                jogadorDAO.atualizar(jogador);
-                
-                try {
-                    tabuleiroDAO.remover(tabuleiroAntigoId);
-                    System.out.println("Tabuleiro antigo " + tabuleiroAntigoId + " removido com sucesso");
-                } catch (Exception e) {
-                    System.err.println("Erro ao remover tabuleiro antigo: " + e.getMessage());
+            } finally {
+                if (emVerif.isOpen()) {
+                    emVerif.close();
                 }
             }
             
-            // Criar novo tabuleiro
-            System.out.println("Criando novo tabuleiro para jogador " + jogadorId + " com tamanho " + partida.getTamanhoTabuleiro());
+            System.out.println("ETAPA 3: Recarregando entidades");
+            jogador = jogadorDAO.buscar(jogadorId);
+            partida = partidaDAO.buscar(partidaId);
+            
+            if (jogador.getPartida() == null || !jogador.getPartida().getId().equals(partidaId)) {
+                System.out.println("  -> Adicionando jogador à partida");
+                partida.adicionarJogador(jogador);
+                partidaDAO.atualizar(partida);
+            }
+            
+            System.out.println("ETAPA 4: Criando novo tabuleiro " + partida.getTamanhoTabuleiro() + "x" + partida.getTamanhoTabuleiro());
+            
+            jogador = jogadorDAO.buscar(jogadorId);
+            
             Tabuleiro novoTabuleiro = new Tabuleiro();
             novoTabuleiro.setTamanho(partida.getTamanhoTabuleiro());
             novoTabuleiro.setJogador(jogador);
             jogador.setTabuleiro(novoTabuleiro);
-            
-            // Resetar status do jogador
             jogador.setProntoParaJogar(false);
             
-            // Atualizar jogador e partida
             jogadorDAO.atualizar(jogador);
-            partidaDAO.atualizar(partida);
+            
+            System.out.println("SUCESSO: Jogador entrou na partida com novo tabuleiro");
             
             return converterPartidaParaDTO(partida);
+            
         } catch (Exception e) {
-            throw new RemoteException("Erro ao entrar na partida", e);
+            System.err.println("ERRO: " + e.getMessage());
+            e.printStackTrace();
+            throw new RemoteException("Erro ao entrar na partida: " + e.getMessage(), e);
         }
     }
     
     @Override
     public List<PartidaDTO> listarPartidasDisponiveis() throws RemoteException {
         try {
-            // Limpar partidas abandonadas antes de listar
             limparPartidasAbandonadas();
             
             List<Partida> partidas = partidaDAO.buscarPartidasAguardando();
@@ -220,7 +211,6 @@ public class ServidorRMI extends UnicastRemoteObject implements InterfaceServido
             System.out.println("=== LISTANDO PARTIDAS DISPONÍVEIS ===");
             
             for (Partida partida : partidas) {
-                // Forçar carregamento dos jogadores
                 partida.getJogadores().size();
                 
                 System.out.println("Partida ID: " + partida.getId() + 
@@ -251,18 +241,45 @@ public class ServidorRMI extends UnicastRemoteObject implements InterfaceServido
     }
     
     @Override
+    public void cancelarPartida(Long jogadorId, Long partidaId) throws RemoteException {
+        try {
+            System.out.println("=== CANCELANDO PARTIDA " + partidaId + " - JOGADOR " + jogadorId + " ===");
+            
+            Jogador jogador = jogadorDAO.buscar(jogadorId);
+            Partida partida = partidaDAO.buscar(partidaId);
+            
+            if (partida == null) {
+                System.out.println("Partida já foi removida");
+                return;
+            }
+            
+            for (Jogador j : new ArrayList<>(partida.getJogadores())) {
+                j.setPartida(null);
+                j.setProntoParaJogar(false);
+                jogadorDAO.atualizar(j);
+            }
+            
+            partidaDAO.remover(partidaId);
+            
+            System.out.println("Partida " + partidaId + " cancelada e removida com sucesso");
+            
+        } catch (Exception e) {
+            System.err.println("Erro ao cancelar partida: " + e.getMessage());
+            throw new RemoteException("Erro ao cancelar partida", e);
+        }
+    }
+    
+    @Override
     public boolean posicionarNavios(Long jogadorId, List<NavioDTO> naviosDTO) throws RemoteException {
         try {
             Jogador jogador = jogadorDAO.buscar(jogadorId);
             Tabuleiro tabuleiro = jogador.getTabuleiro();
             
-            // Limpar navios anteriores
             for (Navio navio : tabuleiro.getNavios()) {
                 navioDAO.remover(navio.getId());
             }
             tabuleiro.getNavios().clear();
             
-            // Adicionar novos navios
             for (NavioDTO navioDTO : naviosDTO) {
                 Navio navio = new Navio(
                     navioDTO.getTipo(),
@@ -272,7 +289,6 @@ public class ServidorRMI extends UnicastRemoteObject implements InterfaceServido
                 );
                 tabuleiro.adicionarNavio(navio);
                 
-                // Atualizar matriz do tabuleiro
                 atualizarMatrizComNavio(tabuleiro, navio);
             }
             
@@ -290,7 +306,6 @@ public class ServidorRMI extends UnicastRemoteObject implements InterfaceServido
             jogador.setProntoParaJogar(true);
             jogadorDAO.atualizar(jogador);
             
-            // Verificar se ambos os jogadores estão prontos
             Partida partida = jogador.getPartida();
             if (partida.estaCheia()) {
                 boolean todosProntos = true;
@@ -317,12 +332,10 @@ public class ServidorRMI extends UnicastRemoteObject implements InterfaceServido
             Jogador jogador = jogadorDAO.buscar(jogadorId);
             Partida partida = jogador.getPartida();
             
-            // Verificar se é o turno do jogador
             if (!partida.getTurnoJogadorId().equals(jogadorId)) {
                 return new ResultadoJogadaDTO("ERRO", false, null, "Não é seu turno!");
             }
             
-            // Encontrar o adversário
             Jogador adversario = null;
             for (Jogador j : partida.getJogadores()) {
                 if (!j.getId().equals(jogadorId)) {
@@ -333,21 +346,17 @@ public class ServidorRMI extends UnicastRemoteObject implements InterfaceServido
             
             Tabuleiro tabuleiroAdversario = adversario.getTabuleiro();
             
-            // Forçar carregamento dos navios (lazy loading)
             tabuleiroAdversario.getNavios().size();
             
-            // Verificar se já foi atacado
             String celulaAtual = tabuleiroAdversario.obterCelula(linha, coluna);
             if (celulaAtual.equals("2") || celulaAtual.equals("3")) {
                 return new ResultadoJogadaDTO("ERRO", false, null, "Posição já foi atacada!");
             }
             
-            // Realizar ataque
             String resultado;
             boolean acertou = false;
             Navio navioAtingido = null;
             
-            // Verificar se acertou um navio
             for (Navio navio : tabuleiroAdversario.getNavios()) {
                 if (navio.ocupaPosicao(linha, coluna)) {
                     acertou = true;
@@ -357,7 +366,7 @@ public class ServidorRMI extends UnicastRemoteObject implements InterfaceServido
             }
             
             if (acertou) {
-                tabuleiroAdversario.atualizarCelula(linha, coluna, "3"); // Navio atingido
+                tabuleiroAdversario.atualizarCelula(linha, coluna, "3"); 
                 navioAtingido.receberAtaque();
                 navioDAO.atualizar(navioAtingido);
                 
@@ -367,26 +376,22 @@ public class ServidorRMI extends UnicastRemoteObject implements InterfaceServido
                     resultado = "ACERTO";
                 }
             } else {
-                tabuleiroAdversario.atualizarCelula(linha, coluna, "2"); // Água atingida
+                tabuleiroAdversario.atualizarCelula(linha, coluna, "2"); 
                 resultado = "AGUA";
             }
             
             tabuleiroDAO.atualizar(tabuleiroAdversario);
             
-            // Registrar jogada
             Jogada jogada = new Jogada(linha, coluna, jogadorId, adversario.getId());
             jogada.setResultado(resultado);
             partida.adicionarJogada(jogada);
             jogadaDAO.salvar(jogada);
             
-            // Verificar vitória
             boolean fimDeJogo = false;
             Long vencedorId = null;
             
-            // Forçar carregamento dos navios antes de verificar
             tabuleiroAdversario.getNavios().size();
             
-            // Debug: imprimir informações dos navios
             System.out.println("=== VERIFICANDO VITÓRIA ===");
             System.out.println("Total de navios: " + tabuleiroAdversario.getNavios().size());
             for (Navio navio : tabuleiroAdversario.getNavios()) {
@@ -400,13 +405,10 @@ public class ServidorRMI extends UnicastRemoteObject implements InterfaceServido
                 partida.finalizar(vencedorId);
                 partidaDAO.atualizar(partida);
             } else {
-                // Alternar turno APENAS se errou (água)
-                // Se acertou ou afundou, o jogador joga novamente
                 if (resultado.equals("AGUA")) {
                     partida.setTurnoJogadorId(adversario.getId());
                     partidaDAO.atualizar(partida);
                 }
-                // Se acertou, mantém o turno do jogador atual (não faz nada)
             }
             
             String mensagem = resultado.equals("AGUA") ? "Água! Vez do adversário." : 
@@ -435,7 +437,6 @@ public class ServidorRMI extends UnicastRemoteObject implements InterfaceServido
             Jogador jogador = jogadorDAO.buscar(jogadorId);
             Partida partida = jogador.getPartida();
             
-            // Encontrar adversário
             for (Jogador j : partida.getJogadores()) {
                 if (!j.getId().equals(jogadorId)) {
                     return j.getTabuleiro().getMatriz();
@@ -464,7 +465,6 @@ public class ServidorRMI extends UnicastRemoteObject implements InterfaceServido
             Jogador jogador = jogadorDAO.buscar(jogadorId);
             Tabuleiro tabuleiro = jogador.getTabuleiro();
             
-            // Forçar carregamento dos navios
             if (tabuleiro.getNavios() != null) {
                 tabuleiro.getNavios().size();
             }
@@ -477,7 +477,6 @@ public class ServidorRMI extends UnicastRemoteObject implements InterfaceServido
             System.out.println("Orientação: " + navioDTO.getOrientacao());
             System.out.println("Navios já posicionados: " + (tabuleiro.getNavios() != null ? tabuleiro.getNavios().size() : 0));
             
-            // Verificar limites do tabuleiro
             if (navioDTO.getOrientacao().equals("HORIZONTAL")) {
                 if (navioDTO.getColunaInicial() + tamanho > tabuleiro.getTamanho()) {
                     System.out.println("FALHA: Ultrapassa limite horizontal");
@@ -490,7 +489,6 @@ public class ServidorRMI extends UnicastRemoteObject implements InterfaceServido
                 }
             }
             
-            // Verificar sobreposição com outros navios
             if (tabuleiro.getNavios() != null) {
                 for (Navio navio : tabuleiro.getNavios()) {
                     if (naviosSeColidem(navioDTO, navio, tamanho)) {
@@ -569,27 +567,53 @@ public class ServidorRMI extends UnicastRemoteObject implements InterfaceServido
         return false;
     }
     
-    /**
-     * Remove partidas que estão aguardando há muito tempo ou que estão vazias
-     */
+    private void limparTabuleirosOrfaos() {
+        try {
+            EntityManager em = JPAUtil.getEntityManager();
+            try {
+                TypedQuery<Tabuleiro> query = em.createQuery(
+                    "SELECT t FROM Tabuleiro t WHERE t.jogador IS NULL", Tabuleiro.class);
+                List<Tabuleiro> tabuleirosOrfaos = query.getResultList();
+                
+                for (Tabuleiro tabuleiro : tabuleirosOrfaos) {
+                    System.out.println("Removendo tabuleiro órfão ID: " + tabuleiro.getId());
+                    try {
+                        tabuleiro.getNavios().size();
+                        for (Navio navio : new ArrayList<>(tabuleiro.getNavios())) {
+                            navioDAO.remover(navio.getId());
+                        }
+                        tabuleiroDAO.remover(tabuleiro.getId());
+                    } catch (Exception e) {
+                        System.err.println("Erro ao remover tabuleiro órfão " + tabuleiro.getId() + ": " + e.getMessage());
+                    }
+                }
+            } finally {
+                if (em.isOpen()) {
+                    em.close();
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Erro ao limpar tabuleiros órfãos: " + e.getMessage());
+        }
+    }
+    
     private void limparPartidasAbandonadas() {
         try {
+            limparTabuleirosOrfaos();
+            
             List<Partida> partidas = partidaDAO.buscarPartidasAguardando();
             long tempoAtual = System.currentTimeMillis();
-            long timeout = 30 * 60 * 1000; // 30 minutos
+            long timeout = 30 * 60 * 1000; 
             
             for (Partida partida : partidas) {
                 boolean deveLimpar = false;
                 
-                // Forçar carregamento dos jogadores
                 partida.getJogadores().size();
                 
-                // Remover partidas vazias
                 if (partida.getJogadores().isEmpty()) {
                     deveLimpar = true;
                 }
                 
-                // Remover partidas antigas (mais de 30 minutos aguardando)
                 if (partida.getDataInicio() != null) {
                     long tempoDecorrido = tempoAtual - partida.getDataInicio().getTime();
                     if (tempoDecorrido > timeout) {
@@ -600,14 +624,12 @@ public class ServidorRMI extends UnicastRemoteObject implements InterfaceServido
                 if (deveLimpar) {
                     System.out.println("Removendo partida abandonada: ID " + partida.getId());
                     
-                    // Limpar referências dos jogadores ANTES de remover a partida
                     for (Jogador jogador : new ArrayList<>(partida.getJogadores())) {
                         jogador.setPartida(null);
                         jogador.setProntoParaJogar(false);
                         jogadorDAO.atualizar(jogador);
                     }
                     
-                    // Agora sim, remover a partida
                     try {
                         partidaDAO.remover(partida.getId());
                     } catch (Exception e) {
@@ -616,7 +638,6 @@ public class ServidorRMI extends UnicastRemoteObject implements InterfaceServido
                 }
             }
             
-            // Também limpar partidas canceladas antigas
             limparPartidasCanceladas();
             
         } catch (Exception e) {
@@ -625,9 +646,6 @@ public class ServidorRMI extends UnicastRemoteObject implements InterfaceServido
         }
     }
     
-    /**
-     * Remove partidas canceladas que estão no banco há mais de 5 minutos
-     */
     private void limparPartidasCanceladas() {
         try {
             EntityManager em = JPAUtil.getEntityManager();
@@ -637,7 +655,7 @@ public class ServidorRMI extends UnicastRemoteObject implements InterfaceServido
                 List<Partida> partidasCanceladas = query.getResultList();
                 
                 long tempoAtual = System.currentTimeMillis();
-                long timeout = 5 * 60 * 1000; // 5 minutos
+                long timeout = 5 * 60 * 1000; 
                 
                 for (Partida partida : partidasCanceladas) {
                     if (partida.getDataInicio() != null) {
@@ -645,7 +663,6 @@ public class ServidorRMI extends UnicastRemoteObject implements InterfaceServido
                         if (tempoDecorrido > timeout) {
                             System.out.println("Removendo partida cancelada: ID " + partida.getId());
                             
-                            // Forçar carregamento e limpar jogadores ANTES de remover partida
                             partida.getJogadores().size();
                             for (Jogador jogador : new ArrayList<>(partida.getJogadores())) {
                                 jogador.setPartida(null);
@@ -653,7 +670,6 @@ public class ServidorRMI extends UnicastRemoteObject implements InterfaceServido
                                 jogadorDAO.atualizar(jogador);
                             }
                             
-                            // Agora remover a partida
                             try {
                                 partidaDAO.remover(partida.getId());
                             } catch (Exception e) {
